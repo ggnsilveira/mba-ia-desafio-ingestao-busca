@@ -1,3 +1,14 @@
+import os
+
+from dotenv import load_dotenv
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.prompts import PromptTemplate
+from langchain_core.runnables import RunnablePassthrough
+from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
+from langchain_postgres import PGVector
+
+load_dotenv()
+
 PROMPT_TEMPLATE = """
 CONTEXTO:
 {contexto}
@@ -25,5 +36,19 @@ PERGUNTA DO USUÁRIO:
 RESPONDA A "PERGUNTA DO USUÁRIO"
 """
 
+
 def search_prompt(question=None):
-    pass
+    store = PGVector(
+        embeddings=GoogleGenerativeAIEmbeddings(model=os.getenv("GOOGLE_EMBEDDING_MODEL")),
+        collection_name=os.getenv("PG_VECTOR_COLLECTION_NAME"),
+        connection=os.getenv("DATABASE_URL"),
+        use_jsonb=True,
+    )
+    llm = ChatGoogleGenerativeAI(model=os.getenv("GOOGLE_LLM_MODEL"))
+    prompt = PromptTemplate.from_template(PROMPT_TEMPLATE)
+
+    def search_context(question):
+        results = store.similarity_search_with_score(question, k=10)
+        return "\n\n".join(document.page_content for document, _score in results)
+
+    return {"contexto": search_context, "pergunta": RunnablePassthrough()} | prompt | llm | StrOutputParser()
