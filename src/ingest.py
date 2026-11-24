@@ -25,6 +25,7 @@ def ingest_pdf():
         collection_name=os.getenv("PG_VECTOR_COLLECTION_NAME"),
         connection=os.getenv("DATABASE_URL"),
         use_jsonb=True,
+        pre_delete_collection=True,
     )
 
     for start in range(0, len(chunks), BATCH_SIZE):

@@ -11,7 +11,15 @@ def main():
     print("Faça sua pergunta:\n")
 
     while True:
-        question = input("PERGUNTA: ")
+        try:
+            question = input("PERGUNTA: ").strip()
+        except (KeyboardInterrupt, EOFError):
+            print()
+            break
+
+        if not question:
+            continue
+
         answer = chain.invoke(question)
         print(f"RESPOSTA: {answer}\n")
 
